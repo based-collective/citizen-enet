@@ -47,7 +47,7 @@ use std::{
     },
 };
 
-use enet_sys::{enet_deinitialize, enet_host_create, enet_initialize, enet_linked_version};
+use citizen_enet_sys::{enet_deinitialize, enet_host_create, enet_initialize, enet_linked_version};
 
 mod address;
 mod event;
@@ -61,7 +61,7 @@ pub use crate::host::{BandwidthLimit, ChannelLimit, Host};
 pub use crate::packet::{Packet, PacketMode};
 pub use crate::peer::{Peer, PeerPacket, PeerState};
 
-pub use enet_sys::ENetVersion as EnetVersion;
+pub use citizen_enet_sys::ENetVersion as EnetVersion;
 
 const ENET_UNINITIALIZED: usize = 1;
 const ENET_INITIALIZED: usize = 2;
@@ -188,6 +188,8 @@ impl Drop for EnetKeepAlive {
 
 #[cfg(test)]
 mod tests {
+    use std::net::{IpAddr, SocketAddr, SocketAddrV4};
+
     use super::{BandwidthLimit, ChannelLimit, Enet};
 
     lazy_static! {
@@ -207,7 +209,7 @@ mod tests {
 
         let enet = &ENET;
         enet.create_host::<()>(
-            Some(&Address::new(Ipv4Addr::LOCALHOST, 12345)),
+            Some(&Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 12345)))),
             1,
             ChannelLimit::Maximum,
             BandwidthLimit::Unlimited,

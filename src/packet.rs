@@ -1,4 +1,4 @@
-use enet_sys::{
+use citizen_enet_sys::{
     enet_packet_create, enet_packet_destroy, ENetPacket, _ENetPacketFlag_ENET_PACKET_FLAG_RELIABLE,
     _ENetPacketFlag_ENET_PACKET_FLAG_UNSEQUENCED,
 };

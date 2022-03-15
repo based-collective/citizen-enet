@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::{Address, EnetKeepAlive, Error, Event, Peer};
 
-use enet_sys::{
+use citizen_enet_sys::{
     enet_host_bandwidth_limit, enet_host_channel_limit, enet_host_check_events, enet_host_connect,
     enet_host_destroy, enet_host_flush, enet_host_service, ENetHost, ENetPeer,
     ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT,

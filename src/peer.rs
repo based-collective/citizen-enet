@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::time::Duration;
 
-use enet_sys::{
+use citizen_enet_sys::{
     enet_peer_disconnect, enet_peer_disconnect_later, enet_peer_disconnect_now, enet_peer_receive,
     enet_peer_reset, enet_peer_send, ENetPeer,
     _ENetPeerState,
@@ -65,9 +65,9 @@ pub enum PeerState {
 }
 
 impl PeerState {
-    fn from_sys_state(enet_sys_state: _ENetPeerState) -> PeerState {
+    fn from_sys_state(citizen_enet_sys_state: _ENetPeerState) -> PeerState {
         #[allow(non_upper_case_globals)]
-        match enet_sys_state {
+        match citizen_enet_sys_state {
             _ENetPeerState_ENET_PEER_STATE_DISCONNECTED => PeerState::Disconnected,
             _ENetPeerState_ENET_PEER_STATE_CONNECTING => PeerState::Connecting,
             _ENetPeerState_ENET_PEER_STATE_ACKNOWLEDGING_CONNECT => PeerState::AcknowledgingConnect,
