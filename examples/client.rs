@@ -17,7 +17,7 @@ fn main() {
         )
         .expect("could not create host");
 
-    host.connect(&Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192, 168, 68, 57), 30120))), 10, 0)
+    host.connect(&Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 12345))), 10, 0)
         .expect("connect failed");
 
     let mut peer = loop {

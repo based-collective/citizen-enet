@@ -1,13 +1,13 @@
 extern crate citizen_enet;
 
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
 use citizen_enet::*;
 
 fn main() {
     let enet = Enet::new().expect("could not initialize ENet");
 
-    let local_addr = Address::new(Ipv4Addr::LOCALHOST, 9001);
+    let local_addr = Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 12345)));
 
     let mut host = enet
         .create_host::<()>(

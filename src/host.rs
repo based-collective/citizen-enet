@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 
-use crate::{Address, EnetKeepAlive, Error, Event, Peer};
+use crate::{Address, EnetKeepAlive, Error, Event, Peer, socket::Socket};
 
 use citizen_enet_sys::{
     enet_host_bandwidth_limit, enet_host_channel_limit, enet_host_check_events, enet_host_connect,
@@ -235,8 +235,8 @@ impl<T> Host<T> {
     }
 
     /// Returns a wrapped socket
-    pub fn socket(&mut self) -> Socket {
-        Socket::new((*self.inner).socket)
+    pub fn socket(&mut self) -> Socket<T> {
+        Socket::new(unsafe { (*self.inner).socket })
     }
 }
 
