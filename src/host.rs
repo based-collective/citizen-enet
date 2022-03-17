@@ -87,7 +87,11 @@ impl<T> Host<T> {
             F: 'static
     {
         let handler: Box<Box<dyn FnMut(_, _, _) -> _>> = Box::new(Box::new(intercept_fn));
-        HOST_INTERCEPT_HANDLERS.lock().unwrap().insert(self.inner as usize, (self as *const Self as usize, Box::into_raw(handler) as usize));
+        if let Some((_, prev_addr)) = HOST_INTERCEPT_HANDLERS.lock().unwrap()
+            .insert(self.inner as usize, (self as *const Self as usize, Box::into_raw(handler) as usize))
+        {
+            let _: Box<Box<dyn FnMut(i32) -> bool>> = unsafe { Box::from_raw(prev_addr as *mut _) };
+        }
         unsafe {
             (*self.inner).intercept = Some(Self::intercept_handler)
         }
@@ -104,6 +108,7 @@ impl<T> Host<T> {
 
         match result {
             Ok(r) => r as i32,
+            // TODO: return -1 and log error instead
             Err(_) => process::abort(),
         }
     }
