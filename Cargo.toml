@@ -16,9 +16,10 @@ license = "Apache-2.0 OR MIT"
 maintenance = { status = "actively-developed" }
 
 [dependencies]
-citizen-enet-sys = { git = "https://github.com/jujhar16/citizen-enet-sys" }
+citizen-enet-sys = { path = "../citizen-enet-sys" }
 failure = "0.1.8"
 failure_derive = "0.1.8"
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 lazy_static = "1.4.0"

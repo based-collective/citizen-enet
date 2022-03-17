@@ -1,8 +1,8 @@
-extern crate enet;
+extern crate citizen_enet;
 
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 
-use enet::*;
+use citizen_enet::*;
 
 fn main() {
     let enet = Enet::new().expect("could not initialize ENet");
@@ -17,7 +17,7 @@ fn main() {
         )
         .expect("could not create host");
 
-    host.connect(&Address::new(Ipv4Addr::LOCALHOST, 9001), 10, 0)
+    host.connect(&Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(192, 168, 68, 57), 30120))), 10, 0)
         .expect("connect failed");
 
     let mut peer = loop {

@@ -1,4 +1,5 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, collections::HashMap, sync::Mutex, process, panic, mem, slice};
+use lazy_static::lazy_static;
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 
@@ -7,7 +8,7 @@ use crate::{Address, EnetKeepAlive, Error, Event, Peer};
 use citizen_enet_sys::{
     enet_host_bandwidth_limit, enet_host_channel_limit, enet_host_check_events, enet_host_connect,
     enet_host_destroy, enet_host_flush, enet_host_service, ENetHost, ENetPeer,
-    ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT,
+    ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT, ENetEvent,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -55,6 +56,10 @@ impl BandwidthLimit {
     }
 }
 
+lazy_static! {
+    static ref HOST_INTERCEPT_HANDLERS: Mutex<HashMap<usize, (usize, usize)>> = Mutex::new(HashMap::new());
+}
+
 /// A `Host` represents one endpoint of an ENet connection. Created through `Enet`.
 ///
 /// This type provides functionality such as connection establishment and packet transmission.
@@ -73,6 +78,33 @@ impl<T> Host<T> {
             inner,
             _keep_alive,
             _peer_data: PhantomData,
+        }
+    }
+
+    /// Callback the user can set to intercept received raw UDP packets.
+    pub fn set_intercept<F>(&mut self, intercept_fn: F)
+        where F: FnMut(&[u8], &mut Host<T>, Option<Event<T>>) -> bool,
+            F: 'static
+    {
+        let handler: Box<Box<dyn FnMut(_, _, _) -> _>> = Box::new(Box::new(intercept_fn));
+        HOST_INTERCEPT_HANDLERS.lock().unwrap().insert(self.inner as usize, (self as *const Self as usize, Box::into_raw(handler) as usize));
+        unsafe {
+            (*self.inner).intercept = Some(Self::intercept_handler)
+        }
+    }
+
+    unsafe extern "C" fn intercept_handler(c_host: *mut ENetHost, event: *mut ENetEvent) -> i32 {
+        let result = panic::catch_unwind(|| {
+            let (host_addr, addr) = *HOST_INTERCEPT_HANDLERS.lock().unwrap().get(&(c_host as usize)).unwrap();
+            let data = slice::from_raw_parts((*c_host).receivedData, (*c_host).receivedDataLength);
+            let host: &mut Host<T> = unsafe { mem::transmute(host_addr) };
+            let closure: &mut Box<dyn FnMut(&[u8], &mut Host<T>, Option<Event<T>>) -> bool> = unsafe { mem::transmute(addr) };
+            closure(data, host, Event::from_sys_event(event.as_ref().unwrap()))
+        });
+
+        match result {
+            Ok(r) => r as i32,
+            Err(_) => process::abort(),
         }
     }
 
@@ -137,7 +169,7 @@ impl<T> Host<T> {
         let raw_peers =
             unsafe { std::slice::from_raw_parts_mut((*self.inner).peers, (*self.inner).peerCount) };
 
-        raw_peers.into_iter().map(|rp| Peer::new(rp))
+        raw_peers.iter_mut().map(|rp| Peer::new(rp))
     }
 
     /// Maintains this host and delivers an event if available.
@@ -209,5 +241,7 @@ impl<T> Drop for Host<T> {
         unsafe {
             enet_host_destroy(self.inner);
         }
+        let (_, addr) = HOST_INTERCEPT_HANDLERS.lock().unwrap().remove(&(self.inner as usize)).unwrap();
+        let _: Box<Box<dyn FnMut(i32) -> bool>> = unsafe { Box::from_raw(addr as *mut _) };
     }
 }

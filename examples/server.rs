@@ -1,8 +1,8 @@
-extern crate enet;
+extern crate citizen_enet;
 
 use std::net::Ipv4Addr;
 
-use enet::*;
+use citizen_enet::*;
 
 fn main() {
     let enet = Enet::new().expect("could not initialize ENet");
