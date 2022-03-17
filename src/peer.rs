@@ -84,8 +84,8 @@ impl PeerState {
 }
 
 impl<'a, T> Peer<'a, T> {
-    pub(crate) fn new(inner: *mut ENetPeer) -> Peer<'a, T> {
-        Peer {
+    pub(crate) fn new(inner: *mut ENetPeer) -> Self {
+        Self {
             inner,
             _data: PhantomData,
         }

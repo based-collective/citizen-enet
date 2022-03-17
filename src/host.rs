@@ -233,6 +233,11 @@ impl<T> Host<T> {
 
         Ok(Peer::new(res))
     }
+
+    /// Returns a wrapped socket
+    pub fn socket(&mut self) -> Socket {
+        Socket::new((*self.inner).socket)
+    }
 }
 
 impl<T> Drop for Host<T> {

@@ -53,6 +53,7 @@ mod address;
 mod event;
 mod host;
 mod packet;
+mod socket;
 mod peer;
 
 pub use crate::address::Address;
