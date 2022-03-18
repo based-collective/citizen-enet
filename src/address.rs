@@ -1,11 +1,12 @@
 use std::ffi::CString;
 use std::net::{Ipv4Addr, Ipv6Addr, IpAddr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::ops::{Deref, DerefMut};
 
 use crate::Error;
 
 use citizen_enet_sys::{ENetAddress, in6_addr, in6_addr__bindgen_ty_1};
 
-/// An IPv4 address that can be used with the ENet API.
+/// An address that can be used with the ENet API.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Address(pub SocketAddr);
 
@@ -83,6 +84,20 @@ impl Address {
                 addr.sin6_scope_id as u32
             )))
         }
+    }
+}
+
+impl Deref for Address {
+    type Target = SocketAddr;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Address {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

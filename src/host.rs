@@ -83,14 +83,14 @@ impl<T> Host<T> {
 
     /// Callback the user can set to intercept received raw UDP packets.
     pub fn set_intercept<F>(&mut self, intercept_fn: F)
-        where F: FnMut(&[u8], &mut Host<T>, Option<Event<T>>) -> bool,
+        where F: FnMut(&mut Host<T>, Address, &[u8]) -> bool,
             F: 'static
     {
         let handler: Box<Box<dyn FnMut(_, _, _) -> _>> = Box::new(Box::new(intercept_fn));
         if let Some((_, prev_addr)) = HOST_INTERCEPT_HANDLERS.lock().unwrap()
             .insert(self.inner as usize, (self as *const Self as usize, Box::into_raw(handler) as usize))
         {
-            let _: Box<Box<dyn FnMut(i32) -> bool>> = unsafe { Box::from_raw(prev_addr as *mut _) };
+            let _: Box<Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool>> = unsafe { Box::from_raw(prev_addr as *mut _) };
         }
         unsafe {
             (*self.inner).intercept = Some(Self::intercept_handler)
@@ -102,8 +102,8 @@ impl<T> Host<T> {
             let (host_addr, addr) = *HOST_INTERCEPT_HANDLERS.lock().unwrap().get(&(c_host as usize)).unwrap();
             let data = slice::from_raw_parts((*c_host).receivedData, (*c_host).receivedDataLength);
             let host: &mut Host<T> = unsafe { mem::transmute(host_addr) };
-            let closure: &mut Box<dyn FnMut(&[u8], &mut Host<T>, Option<Event<T>>) -> bool> = unsafe { mem::transmute(addr) };
-            closure(data, host, Event::from_sys_event(event.as_ref().unwrap()))
+            let closure: &mut Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool> = unsafe { mem::transmute(addr) };
+            closure(host, Address::from_enet_address(&(*c_host).receivedAddress), data)
         });
 
         match result {
@@ -252,6 +252,6 @@ impl<T> Drop for Host<T> {
             enet_host_destroy(self.inner);
         }
         let (_, addr) = HOST_INTERCEPT_HANDLERS.lock().unwrap().remove(&(self.inner as usize)).unwrap();
-        let _: Box<Box<dyn FnMut(i32) -> bool>> = unsafe { Box::from_raw(addr as *mut _) };
+        let _: Box<Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool>> = unsafe { Box::from_raw(addr as *mut _) };
     }
 }

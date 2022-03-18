@@ -4,8 +4,8 @@ use citizen_enet_sys::{enet_socket_send, ENetSocket};
 
 use crate::{Address, Error};
 
-/// TODO: documentation
-/// TODO: lifetimes
+// TODO: documentation
+// TODO: lifetimes
 #[derive(Clone, Debug)]
 pub struct Socket<'a, T: 'a> {
     inner: u64,
