@@ -61,6 +61,7 @@ pub use crate::event::Event;
 pub use crate::host::{BandwidthLimit, ChannelLimit, Host};
 pub use crate::packet::{Packet, PacketMode};
 pub use crate::peer::{Peer, PeerPacket, PeerState};
+pub use crate::peer::PACKET_THROTTLE_SCALE as PEER_PACKET_THROTTLE_SCALE;
 
 pub use citizen_enet_sys::ENetVersion as EnetVersion;
 

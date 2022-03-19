@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use citizen_enet_sys::{
     enet_peer_disconnect, enet_peer_disconnect_later, enet_peer_disconnect_now, enet_peer_receive,
-    enet_peer_reset, enet_peer_send, ENetPeer,
+    enet_peer_reset, enet_peer_send, enet_peer_throttle_configure, enet_peer_timeout, ENetPeer,
     _ENetPeerState,
     _ENetPeerState_ENET_PEER_STATE_DISCONNECTED,
     _ENetPeerState_ENET_PEER_STATE_CONNECTING,
@@ -16,6 +16,12 @@ use citizen_enet_sys::{
     _ENetPeerState_ENET_PEER_STATE_ACKNOWLEDGING_DISCONNECT,
     _ENetPeerState_ENET_PEER_STATE_ZOMBIE,
 };
+
+use citizen_enet_sys::ENET_PEER_PACKET_THROTTLE_SCALE;
+
+/// When the throttle has a value of ENET_PEER_PACKET_THROTTLE_SCALE,
+/// no unreliable packets are dropped by ENet, and so 100% of all unreliable packets will be sent. 
+pub static PACKET_THROTTLE_SCALE: u32 = ENET_PEER_PACKET_THROTTLE_SCALE as u32;
 
 use crate::{Address, Error, Packet};
 
@@ -173,6 +179,19 @@ impl<'a, T> Peer<'a, T> {
     /// Returns the state this `Peer` is in.
     pub fn state(&self) -> PeerState {
         PeerState::from_sys_state(unsafe {(*self.inner).state})
+    }
+
+    /// Configures throttle parameter for a peer. 
+    pub fn configure_throttling(&mut self, interval: u32, acceleration: u32, deceleration: u32) {
+        unsafe {
+            enet_peer_throttle_configure(self.inner, interval, acceleration, deceleration);
+        }
+    }
+
+    pub fn set_timeout(&mut self, limit: u32, min: u32, max: u32) {
+        unsafe {
+            enet_peer_timeout(self.inner, limit, min, max);
+        }
     }
 
     /// Queues a packet to be sent.
