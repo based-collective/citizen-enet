@@ -1,4 +1,5 @@
-use std::marker::PhantomData;
+use citizen_enet_sys::ENetBuffer;
+use std::{marker::PhantomData, ffi::c_void};
 
 use citizen_enet_sys::{enet_socket_send, ENetSocket};
 
@@ -23,7 +24,11 @@ impl<'a, T> Socket<'a, T> {
 
     pub fn send_data(&mut self, addr: &Address, data: &[u8]) -> Result<u32, Error> {
         let bytes_sent = unsafe {
-            enet_socket_send(self.inner as ENetSocket, &addr.to_enet_address(), data.as_ptr() as *const _, data.len())
+            let buffer = ENetBuffer {
+                data: data.as_ptr() as *mut c_void,
+                dataLength: data.len(),
+            };
+            enet_socket_send(self.inner, &addr.to_enet_address(), &buffer as *const _, 1)
         };
 
         if bytes_sent < 0 {

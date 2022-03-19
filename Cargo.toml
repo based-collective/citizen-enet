@@ -2,7 +2,7 @@
 name = "citizen-enet"
 version = "0.2.3"
 authors = ["Felix Rath <felixm.rath@gmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "High-level, rust-y bindings to the ENet library"
 documentation = "https://www.docs.rs/enet"
 homepage = "https://github.com/futile/enet-rs"
@@ -20,6 +20,7 @@ citizen-enet-sys = { path = "../citizen-enet-sys" }
 failure = "0.1.8"
 failure_derive = "0.1.8"
 lazy_static = "1.4.0"
+log = "0.4.14"
 
 [dev-dependencies]
 lazy_static = "1.4.0"

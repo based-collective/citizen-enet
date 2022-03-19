@@ -1,7 +1,8 @@
-use std::{marker::PhantomData, collections::HashMap, sync::Mutex, process, panic, mem, slice};
+use std::{marker::PhantomData, collections::HashMap, sync::Mutex, process, panic, mem::{self, ManuallyDrop}, slice};
 use lazy_static::lazy_static;
 use std::mem::MaybeUninit;
 use std::sync::Arc;
+use log::error;
 
 use crate::{Address, EnetKeepAlive, Error, Event, Peer, socket::Socket};
 
@@ -57,7 +58,7 @@ impl BandwidthLimit {
 }
 
 lazy_static! {
-    static ref HOST_INTERCEPT_HANDLERS: Mutex<HashMap<usize, (usize, usize)>> = Mutex::new(HashMap::new());
+    static ref HOST_INTERCEPT_HANDLERS: Mutex<HashMap<usize, usize>> = Mutex::new(HashMap::new());
 }
 
 /// A `Host` represents one endpoint of an ENet connection. Created through `Enet`.
@@ -87,8 +88,8 @@ impl<T> Host<T> {
             F: 'static
     {
         let handler: Box<Box<dyn FnMut(_, _, _) -> _>> = Box::new(Box::new(intercept_fn));
-        if let Some((_, prev_addr)) = HOST_INTERCEPT_HANDLERS.lock().unwrap()
-            .insert(self.inner as usize, (self as *const Self as usize, Box::into_raw(handler) as usize))
+        if let Some(prev_addr) = HOST_INTERCEPT_HANDLERS.lock().unwrap()
+            .insert(self.inner as usize, Box::into_raw(handler) as usize)
         {
             let _: Box<Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool>> = unsafe { Box::from_raw(prev_addr as *mut _) };
         }
@@ -99,17 +100,20 @@ impl<T> Host<T> {
 
     unsafe extern "C" fn intercept_handler(c_host: *mut ENetHost, event: *mut ENetEvent) -> i32 {
         let result = panic::catch_unwind(|| {
-            let (host_addr, addr) = *HOST_INTERCEPT_HANDLERS.lock().unwrap().get(&(c_host as usize)).unwrap();
+            let addr = *HOST_INTERCEPT_HANDLERS.lock().unwrap().get(&(c_host as usize)).unwrap();
             let data = slice::from_raw_parts((*c_host).receivedData, (*c_host).receivedDataLength);
-            let host: &mut Host<T> = unsafe { mem::transmute(host_addr) };
             let closure: &mut Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool> = unsafe { mem::transmute(addr) };
-            closure(host, Address::from_enet_address(&(*c_host).receivedAddress), data)
+            let mut host = ManuallyDrop::new(Self::new(Arc::new(EnetKeepAlive), c_host));
+            closure(&mut host, Address::from_enet_address(&(*c_host).receivedAddress), data)
         });
 
         match result {
             Ok(r) => r as i32,
             // TODO: return -1 and log error instead
-            Err(_) => process::abort(),
+            Err(err) => {
+                error!("panic in intercept_handler: {:?}", err);
+                -1
+            },
         }
     }
 
@@ -251,7 +255,7 @@ impl<T> Drop for Host<T> {
         unsafe {
             enet_host_destroy(self.inner);
         }
-        let (_, addr) = HOST_INTERCEPT_HANDLERS.lock().unwrap().remove(&(self.inner as usize)).unwrap();
+        let addr = HOST_INTERCEPT_HANDLERS.lock().unwrap().remove(&(self.inner as usize)).unwrap();
         let _: Box<Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool>> = unsafe { Box::from_raw(addr as *mut _) };
     }
 }
