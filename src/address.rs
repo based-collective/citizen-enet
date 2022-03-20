@@ -7,7 +7,7 @@ use crate::Error;
 use citizen_enet_sys::{ENetAddress, in6_addr, in6_addr__bindgen_ty_1};
 
 /// An address that can be used with the ENet API.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Address(pub SocketAddr);
 
 impl Address {

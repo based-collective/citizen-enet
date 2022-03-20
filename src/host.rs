@@ -71,6 +71,8 @@ pub struct Host<T> {
     _peer_data: PhantomData<*const T>,
 }
 
+unsafe impl<T> Send for Host<T> {}
+
 impl<T> Host<T> {
     pub(in crate) fn new(_keep_alive: Arc<EnetKeepAlive>, inner: *mut ENetHost) -> Host<T> {
         assert!(!inner.is_null());

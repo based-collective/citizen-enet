@@ -102,9 +102,14 @@ impl<'a, T> Peer<'a, T> {
         Address::from_enet_address(&unsafe { (*self.inner).address })
     }
 
-    /// Returns the amout of channels allocated for this `Peer`.
+    /// Returns the amount of channels allocated for this `Peer`.
     pub fn channel_count(&self) -> usize {
         unsafe { (*self.inner).channelCount }
+    }
+
+    /// Returns the data passed to connect by the peer
+    pub fn event_data(&self) -> u32 {
+        unsafe { (*self.inner).eventData }
     }
 
     /// Returns a reference to the data associated with this `Peer`, if set.
