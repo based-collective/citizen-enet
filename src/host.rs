@@ -87,7 +87,7 @@ impl<T> Host<T> {
     /// Callback the user can set to intercept received raw UDP packets.
     pub fn set_intercept<F>(&mut self, intercept_fn: F)
         where F: FnMut(&mut Host<T>, Address, &[u8]) -> bool,
-            F: 'static
+            F: Send + 'static
     {
         let handler: Box<Box<dyn FnMut(_, _, _) -> _>> = Box::new(Box::new(intercept_fn));
         if let Some(prev_addr) = HOST_INTERCEPT_HANDLERS.lock().unwrap()
@@ -257,7 +257,8 @@ impl<T> Drop for Host<T> {
         unsafe {
             enet_host_destroy(self.inner);
         }
-        let addr = HOST_INTERCEPT_HANDLERS.lock().unwrap().remove(&(self.inner as usize)).unwrap();
-        let _: Box<Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool>> = unsafe { Box::from_raw(addr as *mut _) };
+        if let Some(addr) = HOST_INTERCEPT_HANDLERS.lock().unwrap().remove(&(self.inner as usize)) {
+            let _: Box<Box<dyn FnMut(&mut Host<T>, Address, &[u8]) -> bool>> = unsafe { Box::from_raw(addr as *mut _) };
+        }
     }
 }

@@ -50,6 +50,16 @@ impl PacketMode {
             PacketMode::ReliableSequenced => _ENetPacketFlag_ENET_PACKET_FLAG_RELIABLE as u32,
         }
     }
+
+    fn from_sys_flags(flags: u32) -> Self {
+        if (flags & _ENetPacketFlag_ENET_PACKET_FLAG_UNSEQUENCED as u32) != 0 {
+            PacketMode::UnreliableUnsequenced
+        } else if (flags & _ENetPacketFlag_ENET_PACKET_FLAG_RELIABLE as u32) != 0 {
+            PacketMode::ReliableSequenced
+        } else {
+            PacketMode::UnreliableSequenced
+        }
+    }
 }
 
 impl Packet {
@@ -80,6 +90,10 @@ impl Packet {
     /// Returns a reference to the bytes inside this packet.
     pub fn data<'a>(&'a self) -> &'a [u8] {
         unsafe { std::slice::from_raw_parts((*self.inner).data, (*self.inner).dataLength) }
+    }
+
+    pub fn mode(&self) -> PacketMode {
+        PacketMode::from_sys_flags(unsafe { (*self.inner).flags })
     }
 }
 
