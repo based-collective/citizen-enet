@@ -15,11 +15,7 @@ impl Address {
     pub fn from_hostname(hostname: &CString, port: u16) -> Result<Address, Error> {
         use citizen_enet_sys::enet_address_set_host;
 
-        let host = in6_addr {
-            u: in6_addr__bindgen_ty_1 {
-                Byte: [0; 16]
-            }
-        };
+        let host = unsafe { std::mem::transmute::<_, in6_addr>([0u8; 16]) };
 
         let mut addr = ENetAddress { host, port, sin6_scope_id: 0 };
 
@@ -48,22 +44,14 @@ impl Address {
             SocketAddr::V4(addr) => {
                 let octets = addr.ip().octets();
                 ENetAddress {
-                    host: in6_addr {
-                        u: in6_addr__bindgen_ty_1 {
-                            Byte: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, octets[0], octets[1], octets[2], octets[3]]
-                        }
-                    },
+                    host: unsafe { std::mem::transmute::<_, in6_addr>([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, octets[0], octets[1], octets[2], octets[3]]) },
                     port: self.port(),
                     sin6_scope_id: 0,
                 }
             },
             SocketAddr::V6(addr) => {
                 ENetAddress {
-                    host: in6_addr {
-                        u: in6_addr__bindgen_ty_1 {
-                            Byte: addr.ip().octets()
-                        }
-                    },
+                    host: unsafe { std::mem::transmute::<_, in6_addr>(addr.ip().octets()) },
                     port: self.port(),
                     sin6_scope_id: addr.scope_id() as u16
                 }
@@ -72,13 +60,13 @@ impl Address {
     }
 
     pub(crate) fn from_enet_address(addr: &ENetAddress) -> Address {
-        let hexits = &unsafe { addr.host.u.Word };
-        let octets = &unsafe { addr.host.u.Byte };
-        if hexits[0] == 0 && hexits[1] == 0 && hexits[2] == 0 && hexits[3] == 0 && hexits[4] == 0 && hexits[5] == 0xFFFF {
+        let hextets = &unsafe { std::mem::transmute::<_, [u16; 8]>(addr.host) };
+        let octets = &unsafe { std::mem::transmute::<_, [u8; 16]>(addr.host) };
+        if hextets[0] == 0 && hextets[1] == 0 && hextets[2] == 0 && hextets[3] == 0 && hextets[4] == 0 && hextets[5] == 0xFFFF {
             Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(octets[12], octets[13], octets[14], octets[15]), addr.port)))
         } else {
             Address(SocketAddr::V6(SocketAddrV6::new(
-                Ipv6Addr::new(hexits[0], hexits[1], hexits[2], hexits[3], hexits[4], hexits[5], hexits[6], hexits[7]),
+                Ipv6Addr::new(hextets[0], hextets[1], hextets[2], hextets[3], hextets[4], hextets[5], hextets[6], hextets[7]),
                 addr.port,
                 0,
                 addr.sin6_scope_id as u32

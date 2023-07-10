@@ -9,13 +9,13 @@ use crate::{Address, Error};
 // TODO: lifetimes
 #[derive(Clone, Debug)]
 pub struct Socket<'a, T: 'a> {
-    inner: u64,
+    inner: ENetSocket,
 
     _data: PhantomData<&'a mut T>,
 }
 
 impl<'a, T> Socket<'a, T> {
-    pub(crate) fn new(inner: u64) -> Self {
+    pub(crate) fn new(inner: ENetSocket) -> Self {
         Self {
             inner,
             _data: PhantomData,
