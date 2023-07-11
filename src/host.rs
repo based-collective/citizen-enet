@@ -232,7 +232,7 @@ impl<T> Host<T> {
         let res: *mut ENetPeer = unsafe {
             enet_host_connect(
                 self.inner,
-                &address.to_enet_address() as *const _,
+                &address.enet_address() as *const _,
                 channel_count,
                 user_data,
             )

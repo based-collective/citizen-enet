@@ -146,7 +146,7 @@ impl Enet {
         incoming_bandwidth: BandwidthLimit,
         outgoing_bandwidth: BandwidthLimit,
     ) -> Result<Host<T>, Error> {
-        let addr = address.map(Address::to_enet_address);
+        let addr = address.map(Address::enet_address);
         let inner = unsafe {
             enet_host_create(
                 addr.as_ref()

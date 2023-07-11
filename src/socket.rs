@@ -28,7 +28,7 @@ impl<'a, T> Socket<'a, T> {
                 data: data.as_ptr() as *mut c_void,
                 dataLength: data.len(),
             };
-            enet_socket_send(self.inner, &addr.to_enet_address(), &buffer as *const _, 1)
+            enet_socket_send(self.inner, &addr.enet_address(), &buffer as *const _, 1)
         };
 
         if bytes_sent < 0 {

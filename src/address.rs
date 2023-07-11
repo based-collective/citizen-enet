@@ -39,7 +39,7 @@ impl Address {
         self.0.port()
     }
 
-    pub(crate) fn to_enet_address(&self) -> ENetAddress {
+    pub(crate) fn enet_address(&self) -> ENetAddress {
         match self.0 {
             SocketAddr::V4(addr) => {
                 let octets = addr.ip().octets();
@@ -66,7 +66,7 @@ impl Address {
             Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(octets[12], octets[13], octets[14], octets[15]), addr.port)))
         } else {
             Address(SocketAddr::V6(SocketAddrV6::new(
-                Ipv6Addr::new(hextets[0], hextets[1], hextets[2], hextets[3], hextets[4], hextets[5], hextets[6], hextets[7]),
+                Ipv6Addr::from(*hextets),
                 addr.port,
                 0,
                 addr.sin6_scope_id as u32
