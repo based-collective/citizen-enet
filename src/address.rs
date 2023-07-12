@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 
 use crate::Error;
 
-use citizen_enet_sys::{ENetAddress, in6_addr, in6_addr__bindgen_ty_1};
+use citizen_enet_sys::{ENetAddress, in6_addr, in6_addr__bindgen_ty_1, enet_address_get_host_ip};
 
 /// An address that can be used with the ENet API.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -50,8 +50,26 @@ impl Address {
                 }
             },
             SocketAddr::V6(addr) => {
+                let hextets = addr.ip().segments();
+                let mut network_octets = [0u8; 16];
+                network_octets[0] = (hextets[0] >> 8) as u8;
+                network_octets[1] = hextets[0] as u8;
+                network_octets[2] = (hextets[1] >> 8) as u8;
+                network_octets[3] = hextets[1] as u8;
+                network_octets[4] = (hextets[2] >> 8) as u8;
+                network_octets[5] = hextets[2] as u8;
+                network_octets[6] = (hextets[3] >> 8) as u8;
+                network_octets[7] = hextets[3] as u8;
+                network_octets[8] = (hextets[4] >> 8) as u8;
+                network_octets[9] = hextets[4] as u8;
+                network_octets[10] = (hextets[5] >> 8) as u8;
+                network_octets[11] = hextets[5] as u8;
+                network_octets[12] = (hextets[6] >> 8) as u8;
+                network_octets[13] = hextets[6] as u8;
+                network_octets[14] = (hextets[7] >> 8) as u8;
+                network_octets[15] = hextets[7] as u8;
                 ENetAddress {
-                    host: unsafe { std::mem::transmute::<_, in6_addr>(addr.ip().octets()) },
+                    host: unsafe { std::mem::transmute::<_, in6_addr>(network_octets) },
                     port: self.port(),
                     sin6_scope_id: addr.scope_id() as u16
                 }
@@ -60,13 +78,31 @@ impl Address {
     }
 
     pub(crate) fn from_enet_address(addr: &ENetAddress) -> Address {
+        // TODO: rename to segments, see Ipv6Addr::segments
         let hextets = &unsafe { std::mem::transmute::<_, [u16; 8]>(addr.host) };
         let octets = &unsafe { std::mem::transmute::<_, [u8; 16]>(addr.host) };
         if hextets[0] == 0 && hextets[1] == 0 && hextets[2] == 0 && hextets[3] == 0 && hextets[4] == 0 && hextets[5] == 0xFFFF {
             Address(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(octets[12], octets[13], octets[14], octets[15]), addr.port)))
         } else {
+            let mut network_octets = [0u8; 16];
+            network_octets[1] = (hextets[0] >> 8) as u8;
+            network_octets[0] = hextets[0] as u8;
+            network_octets[3] = (hextets[1] >> 8) as u8;
+            network_octets[2] = hextets[1] as u8;
+            network_octets[5] = (hextets[2] >> 8) as u8;
+            network_octets[4] = hextets[2] as u8;
+            network_octets[7] = (hextets[3] >> 8) as u8;
+            network_octets[6] = hextets[3] as u8;
+            network_octets[9] = (hextets[4] >> 8) as u8;
+            network_octets[8] = hextets[4] as u8;
+            network_octets[11] = (hextets[5] >> 8) as u8;
+            network_octets[10] = hextets[5] as u8;
+            network_octets[13] = (hextets[6] >> 8) as u8;
+            network_octets[12] = hextets[6] as u8;
+            network_octets[15] = (hextets[7] >> 8) as u8;
+            network_octets[14] = hextets[7] as u8;
             Address(SocketAddr::V6(SocketAddrV6::new(
-                Ipv6Addr::from(*hextets),
+                Ipv6Addr::from(network_octets),
                 addr.port,
                 0,
                 addr.sin6_scope_id as u32
